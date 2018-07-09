@@ -1,0 +1,10 @@
+name: gym_ai
+channels:
+dependencies:
+  - python= 2.7
+  - numpy
+  - pandas
+  - nb_conda_kernels
+  - pip:
+    - gym
+    # already installed with Python2- cPickle
