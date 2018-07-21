@@ -163,3 +163,33 @@ if reward!=0
 action[action_index]
 advantage=get_advantage(rewards)
 np.multiply(advantage, np.array(P))
+
+
+#############
+import numpy as np
+
+layers={
+0:{'operation':'X',  'shape':(1600,1), 'value': None, 'parameters':None, 'derivatives':None},
+1:{'operation':'fc', 'shape':None, 'value': None, 'parameters':None, 'derivatives':None},
+2:{'operation':'relu', 'shape': None, 'value': None, 'parameters':None, 'derivatives':None},
+3:{'operation':'fc', 'shape': None, 'value': None, 'parameters':None, 'derivatives':None},
+4:{'operation':'softmax', 'shape': None, 'value': None, 'parameters': None, 'derivatives':None},
+}
+
+
+#foward
+for l in range(0, len(layeres)):
+    if   layers[l]['operation']=='X':  layers[l]['value']=X
+    elif layers[l]['operation']=='fc':
+            #INITIALIZE
+            if layers[l]['parameters']['W'] is None:
+                layers[l]['parameters']['W']=np.zeros(layers[l]['shape'][0], layers[l-1]['shape'][0])
+            #UPDATE
+            else:
+                pass
+            layers[l]['value']=np.dot(layers[l]['parameters']['W'],layers[l-1]['values'])
+    elif layers[l]['operation']=='relu':
+
+    elif layers[l]['operation']=='softmax':
+#backward
+for l in range(0, len(layeres)):
