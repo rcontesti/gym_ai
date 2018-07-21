@@ -119,7 +119,7 @@ prev_prep=None
 cur_prep=prepro(obs)
 x=get_x(cur_prep, prev_prep)
 prev_prep=cur_prep
-
+x.shape
 
 parameters=initialize_parameters(n)
 p,z,a=forward_policy(x,parameters)
@@ -167,39 +167,75 @@ np.multiply(advantage, np.array(P))
 
 #############
 import numpy as np
+import pickle
 (n,m)=X.shape()
+#pickle.dump( x, open( "x.p", "wb" ) )
+X= pickle.load( open( "x.p", "rb" ) )
+
+
+
+#--PARAMETERS
+'''
+[x] (6400,1) layer 0
+ |
+ |
+ W(h1,)X
+ layer[0]               layer[1]:fc                 layer[2]:'relu'               layer[3]:'relu'        layer[4]:'softmax'
+  [X]---(.)  ------->[fc]:np.dot(W1,layer[0])-----> relu[layer[1]]:------(.)----np.dot(W3,layer[2])-------softmax(layer[3])
+(6400,1) |           (200,6400)(6400,1)             (200,1)              |          (3,200)(200,1)             (3,1)
+         |                (200,1)                                        |              (3,1)
+  [W1]---|                                                        [W3]---|
+(200,6400)                                                       (3,200)
+'''
+
 
 model={
-1:{'operation':'fc', 'shape':(200,1), 'value': None, 'parameters':None, 'derivatives':None},
-2:{'operation':'relu', 'shape': (200,1), 'value': None, 'parameters':None, 'derivatives':None},
-3:{'operation':'fc', 'shape': (3,1), 'value': None, 'parameters':None, 'derivatives':None},
-4:{'operation':'softmax', 'shape': (3,1), 'value': None, 'parameters': None, 'derivatives':None},
+0:{'operation':'X',       'shape': (6400,1),'value': None, 'parameters':None, 'derivatives':None},
+1:{'operation':'fc',      'shape': (200,1), 'value': None, 'parameters':None, 'derivatives':None},
+2:{'operation':'relu',    'shape': (200,1), 'value': None, 'parameters':None, 'derivatives':None},
+3:{'operation':'fc',      'shape': (3,1),   'value': None, 'parameters':None, 'derivatives':None},
+4:{'operation':'softmax', 'shape': (3,1),   'value': None, 'parameters':None, 'derivatives':None},
+5:{'operation':'action',  'shape': (3,1),   'value': None, 'parameters':None, 'derivatives':None},
 }
 
 
 #foward
-def forward(X, update=1):
-    for l in model.keys:
+def forward(model, X, learning_rate):
+    for l in model.keys():
+        #X
+        if model[l]['operation']=='X':
+            model[l]['value']=X
+        else:
+            pass
         #FULLY CONNECTED
-        if layers[l]['operation']=='fc':
-                #INITIALIZE
-                if layers[l]['parameters']['W'] is None:
-                    layers[l]['parameters']['W']=np.zeros(layers[l]['shape'][0], layers[l-1]['shape'][0])
-                #UPDATE
-                if update==1:
-                    #layers[l]['parameters']['W']=
-                else:
-                    pass
-            #LAYER
-            layers[l]['value']=np.dot(layers[l]['parameters']['W'],layers[l-1]['values'])
+        if model[l]['operation']=='fc':
+            #INITIALIZE OR UPDATE PARAMETERS
+            if model[l]['parameters'] is None:
+                model[l]['parameters']={'W':np.zeros([model[l]['shape'][0], model[l-1]['shape'][0]])}
+                model[l]['derivatives']={'W':np.zeros([model[l]['shape'][0], model[l-1]['shape'][0]])}
+            else:
+                model[l]['parameters']['W']+=learning_rate*model[l]['derivatives']['W']
+            #PROPAGATE
+            model[l]['value']=np.dot(model[l]['parameters']['W'],model[l-1]['value'])
         #ReLU
-        elif layers[l]['operation']=='relu':
-             layers[l]['value']=layers[l]['value']
-             layers[l]['value']=layers[l]['values'][layers[l]['values']<0]=0
+        elif model[l]['operation']=='relu':
+             model[l]['value']=model[l-1]['value']
+             model[l]['value'][model[l]['value']<0]=0
 
         #SOFTMAX
-        elif layers[l]['operation']=='softmax':
+        elif model[l]['operation']=='softmax':
+             model[l]['value']=np.exp(model[l-1]['value'])/np.sum(np.exp(model[l-1]['value']))
+        elif model[l]['operation']=='action':
+
+        else:
             pass
+    return model
+
+model=forward(model,X,0)
+model[4]['value']
+
+def backward()
+
 
 #backward
-for l in range(0, len(layeres)):
+#TODOfor l in range(0, len(layeres)):
