@@ -167,29 +167,39 @@ np.multiply(advantage, np.array(P))
 
 #############
 import numpy as np
+(n,m)=X.shape()
 
-layers={
-0:{'operation':'X',  'shape':(1600,1), 'value': None, 'parameters':None, 'derivatives':None},
-1:{'operation':'fc', 'shape':None, 'value': None, 'parameters':None, 'derivatives':None},
-2:{'operation':'relu', 'shape': None, 'value': None, 'parameters':None, 'derivatives':None},
-3:{'operation':'fc', 'shape': None, 'value': None, 'parameters':None, 'derivatives':None},
-4:{'operation':'softmax', 'shape': None, 'value': None, 'parameters': None, 'derivatives':None},
+model={
+1:{'operation':'fc', 'shape':(200,1), 'value': None, 'parameters':None, 'derivatives':None},
+2:{'operation':'relu', 'shape': (200,1), 'value': None, 'parameters':None, 'derivatives':None},
+3:{'operation':'fc', 'shape': (3,1), 'value': None, 'parameters':None, 'derivatives':None},
+4:{'operation':'softmax', 'shape': (3,1), 'value': None, 'parameters': None, 'derivatives':None},
 }
 
 
 #foward
-for l in range(0, len(layeres)):
-    if   layers[l]['operation']=='X':  layers[l]['value']=X
-    elif layers[l]['operation']=='fc':
-            #INITIALIZE
-            if layers[l]['parameters']['W'] is None:
-                layers[l]['parameters']['W']=np.zeros(layers[l]['shape'][0], layers[l-1]['shape'][0])
-            #UPDATE
-            else:
-                pass
+def forward(X, update=1):
+    for l in model.keys:
+        #FULLY CONNECTED
+        if layers[l]['operation']=='fc':
+                #INITIALIZE
+                if layers[l]['parameters']['W'] is None:
+                    layers[l]['parameters']['W']=np.zeros(layers[l]['shape'][0], layers[l-1]['shape'][0])
+                #UPDATE
+                if update==1:
+                    #layers[l]['parameters']['W']=
+                else:
+                    pass
+            #LAYER
             layers[l]['value']=np.dot(layers[l]['parameters']['W'],layers[l-1]['values'])
-    elif layers[l]['operation']=='relu':
+        #ReLU
+        elif layers[l]['operation']=='relu':
+             layers[l]['value']=layers[l]['value']
+             layers[l]['value']=layers[l]['values'][layers[l]['values']<0]=0
 
-    elif layers[l]['operation']=='softmax':
+        #SOFTMAX
+        elif layers[l]['operation']=='softmax':
+            pass
+
 #backward
 for l in range(0, len(layeres)):
