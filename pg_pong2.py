@@ -126,6 +126,7 @@ p,z,a=forward_policy(x,parameters)
 action, action_index=get_action(p,eps,action_dic)
 
 # step the environment and get new measurements
+P=[]
 reward=0
 rewards=[reward]
 actions=[]
@@ -168,7 +169,6 @@ np.multiply(advantage, np.array(P))
 #############
 import numpy as np
 import pickle
-(n,m)=X.shape()
 #pickle.dump( x, open( "x.p", "wb" ) )
 X= pickle.load( open( "x.p", "rb" ) )
 
@@ -188,15 +188,60 @@ X= pickle.load( open( "x.p", "rb" ) )
 (200,6400)                                                       (3,200)
 '''
 
-
+action_dic={0:3,1:0,2:2} # 3==UP, 2==DOWN , 0==NOTHING
 model={
 0:{'operation':'X',       'shape': (6400,1),'value': None, 'parameters':None, 'derivatives':None},
 1:{'operation':'fc',      'shape': (200,1), 'value': None, 'parameters':None, 'derivatives':None},
 2:{'operation':'relu',    'shape': (200,1), 'value': None, 'parameters':None, 'derivatives':None},
 3:{'operation':'fc',      'shape': (3,1),   'value': None, 'parameters':None, 'derivatives':None},
 4:{'operation':'softmax', 'shape': (3,1),   'value': None, 'parameters':None, 'derivatives':None},
-5:{'operation':'action',  'shape': (3,1),   'value': None, 'parameters':None, 'derivatives':None},
+5:{'operation':'action',  'shape': (1,1),   'value': None, 'parameters':{'action_dic':action_dic, 'exploration_prob':0}, 'derivatives':None},
 }
+
+np.zeros((6400,1))
+model={
+0:{'activation':'X',       'a':np.zeros((6400,1))},
+1:{'activation':'relu',    'a':np.zeros((200,1)), 'da': np.zeros((200,1)), 'Z': np.zeros((200,1)), 'dZ':np.zeros((200,1)), 'W':np.zeros((200,6400)), 'dW':np.zeros((200,6400)) },
+2:{'activation':'softmax', 'a':np.zeros((3,1)),   'da': np.zeros((3,1)),   'Z': np.zeros((3,1)), 'dZ':np.zeros((3,1)), 'W':np.zeros((3,200)), 'dW':np.zeros((3,200)) }
+}
+
+def forward(model, X):
+    for l in model.keys()[1:]:
+        if 'activation'=='X':
+            model[0]['a']=X
+        elif 'activation'=='relu':
+            model[l]['Z']=np.dot(model[l]['W'],model[l-1]['a'])
+            model[l]['a']=model['l']['Z']
+            model[l]['a'][model['l']['a']<0]=0
+        elif 'activation'=='softmax':
+            model[l]['Z']=np.dot(model[l]['W'],model[l-1]['a'])
+            model[l]['a']=exp(model[l]['Z'])/np.sum(exp(model[l]['Z']))
+        else:
+            pass
+    return model
+
+def backward(model, Y, learning_rate, update):
+    for l in model.keys()[::-1]:
+        elif 'activation'=='relu':
+            model[l]['da']=np.ones(model[l]['a'].shape)
+            model[l]['da'][model[l]['a']<=0]=0
+            model[l]['dZ']=np.dot(model[l]['W'].T, model[l-1]['dZ'])
+            model[l]['dZ']=np.multiply(model[l]['dZ'],model[l]['da'] )
+            model[l]['dW']=np.dot(model[l]['dZ'],model[l-1]['a'].T)
+            model[l]['dW']-=learning_rate*model[l]['dW']
+        elif 'activation'=='softmax':
+            model[l]['da']=1
+            model[l]['dZ']=Y-model[l]['a']
+            model[l]['dW']=np.dot(model[l]['dZ'],model[l-1]['a'].T)
+            model[l]['dW']-=learning_rate*model[l]['dW']
+        else:
+            pass
+    return model
+
+
+
+
+
 
 
 #foward
@@ -227,6 +272,16 @@ def forward(model, X, learning_rate):
              model[l]['value']=np.exp(model[l-1]['value'])/np.sum(np.exp(model[l-1]['value']))
         elif model[l]['operation']=='action':
 
+            eps=model[l]['parameters']['exploration_prob']
+            imax=np.argmax(model[l-1]['value'])
+            idxs=model[l]['parameters']['action_dic'].keys()
+            other_choices=idxs[0:imax]+idxs[imax+1:]
+            #ACTION_INDEX
+            if   np.random.uniform()>eps:
+                model[l]['value']=imax
+            else:
+                model[l]['value']=np.random.choice(other_choices)
+
         else:
             pass
     return model
@@ -234,7 +289,26 @@ def forward(model, X, learning_rate):
 model=forward(model,X,0)
 model[4]['value']
 
-def backward()
+model.keys()[::-1]
+print(a)
+model.keys()
+
+
+def backward(model,y):
+    for l in model.keys()[::-1]:
+        if model[l]['operation']=="softmax":
+            model[l]['derivatives']=model[l]['values']-y
+        elif model[l]['operation']=="relu":
+            model[l]['derivatives']=np.ones(model[l]['values'].shape)
+            model[l]['derivatives'][model[l]['values']<0]=0
+        elif model[l]['operation']=="fc":
+            model[l]['derivatives']['W']=np.matmul(model[l+1]['derivatives']['h'],model[l]['values'].T]
+
+
+
+
+
+
 
 
 #backward
