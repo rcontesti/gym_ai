@@ -1,20 +1,30 @@
-
+# A bit of setup
 import numpy as np
-import pickle
-#pickle.dump( x, open( "x.p", "wb" ) )
-X= pickle.load( open( "x.p", "rb" ) )
-X=X.reshape(X.shape[0],1)
-Y= np.zeros([3,1])
-Y[0]=1
+np.random.seed(0)
+N = 100 # number of points per class
+D = 2 # dimensionality
+K = 3 # number of classes
+X = np.zeros((N*K,D))
+y = np.zeros(N*K, dtype='uint8')
+for j in xrange(K):
+  ix = range(N*j,N*(j+1))
+  r = np.linspace(0.0,1,N) # radius
+  t = np.linspace(j*4,(j+1)*4,N) + np.random.randn(N)*0.2 # theta
+  X[ix] = np.c_[r*np.sin(t), r*np.cos(t)]
+  y[ix] = j
+
+
+(n,m)=X.shape
+n,m
+#Y:=index of each right class. it is not onehotcoded
+h1=100
+h2=3#classes
 
 model0={
-0:{'activation':'X',       'a':np.zeros((6400,1))},
-1:{'activation':'relu',    'a':np.zeros((200,1)), 'da': np.zeros((200,1)), 'Z': np.zeros((200,1)), 'dZ':np.zeros((200,1)), 'W':np.random.randn(200,6400), 'dW':np.zeros((200,6400)) },
-2:{'activation':'softmax', 'a':np.ones((3,1)),   'da': np.zeros((3,1)),   'Z': np.zeros((3,1)), 'dZ':np.zeros((3,1)), 'W': np.random.randn(3,200), 'dW':np.zeros((3,200)) }
+0:{'activation':'X',       'a':np.zeros((n,m))},
+1:{'activation':'relu',    'a':np.zeros((h1,m)), 'da': np.zeros((h1,m)), 'Z': np.zeros((h1,n)), 'dZ':np.zeros((h1,n)), 'W':np.random.randn(h1,n), 'dW':np.zeros((h1,n)) },
+2:{'activation':'softmax', 'a':np.ones((h2,m)),   'da': np.zeros((h2,m)),   'Z': np.zeros((h2,m)), 'dZ':np.zeros((h2,m)), 'W': np.random.randn(h2,h1), 'dW':np.zeros((h2,h1)) }
 }
-
-
-
 
 def forward(model, X):
     for l in model.keys():
@@ -26,7 +36,7 @@ def forward(model, X):
             model[l]['a'][model[l]['a']<0]=0
         elif model[l]['activation']=='softmax':
             model[l]['Z']=np.dot(model[l]['W'],model[l-1]['a'])
-            model[l]['a']=np.exp(model[l]['Z'])/np.sum(np.exp(model[l]['Z']))
+            model[l]['a']=np.exp(model[l]['Z'])/np.sum(np.exp(model[l]['Z']), axis=1, keepdims=True)
         else:
             pass
     return model
@@ -61,4 +71,21 @@ def backward(model, Y, learning_rate, update):# a:= partial_der; In all cases dV
             pass
     return model
 
+model=model0
+model=forward(model,X)
+model=backward(model,y, learning_rate=1e-0, update=1)
+
 #-------------------------------------------------------------------------------
+
+
+model[2]['a']
+
+
+y.shape
+model[2]['a'].shape
+model[2]['a'][:,y]
+
+for i in range(0,100):
+    model=forward(model,X)
+    model=backward(model,Y, learning, update=1)
+    print(loss)
