@@ -14,9 +14,12 @@ h2=3#classes
 learning_rate=1e-0
 update=1
 reg=1e-3
-exploration_eps=0.05
+exploration_eps=0.5
 n_iterations=100
 #functions----------------------------------------------------------------------
+def z(f,c): return np.zeros((f,c))
+def o(f,c): return np.ones((f,c))
+def r(f,c): return 0.01*np.random.randn(f,c)
 def prepro(obs):
   """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
   """ to get image back obs.reshape(80,80)
@@ -61,38 +64,38 @@ I move backward only after I get a reward, this number is not fix: m_b=?
 I update parameters only after e episodes so m_u= E_{e}(m_b0)
 '''
 #TODO: Build flexible architecture both for size of X as well forward and backward
-def z(f,c): return np.zeros((f,c))
-def o(f,c): return np.ones((f,c))
-def r(f,c): return 0.01*np.random.randn(f,c)
+def initialize_flayers():
+    return {0: {'z': None, 'a': None, 'dz': None, 'da': None, 'activation': 'X'},
+            1: {'z': None, 'a': None, 'dz': None, 'da': None, 'activation': 'relu'},
+            2: {'z': None, 'a': None, 'dz': None, 'da': None, 'activation': 'softmax'}}
 
-model0={
-0:{'activation':'X'},
-1:{'activation':'relu',    'W':r(h1,h0), 'dW':z(h1,h0),'b':z(h1,1), 'db':z(h1,1)},
-2:{'activation':'softmax', 'W':r(h2,h1), 'dW':z(h2,h1),'b':z(h2,1), 'db':z(h1,1)}
-}
+def initialize_blayers():
+    return {0: {'z': [], 'a': [], 'dz': [], 'da': [], 'activation': 'X'},
+            1: {'z': [], 'a': [], 'dz': [], 'da': [], 'activation': 'relu'},
+            2: {'z': [], 'a': [], 'dz': [], 'da': [], 'activation': 'softmax'}}
 
-model={1:{'h':100,'activation': 'relu'},2:{'h':3, 'activation':'softmax'}}
-params={1:{'W':None,'b':None},2:{'W':None,'b':None}}
+params={1:{'W':r(h1,h0),'b':z(h1,1)},
+        2:{'W':r(h2,h1),'b':z(h2,1)}}
 
-model[]
-
-def forward(X,model,params)
-    (h0,m)=X.shape
-
-    for l in model.keys():
-        if model[l]['activation']=='relu':
-            model[l]['Z']=np.dot(params[l]['W'],model[l-1]['a'])+model[l]['b']
-            model[l]['a']=model[l]['Z']
-            model[l]['a'][model[l]['a']<0]=0
-        elif model[l]['activation']=='softmax':
-                model[l]['Z']=np.dot(params[l]['W'],model[l-1]['a'])+model[l]['b']
-                model[l]['a']=np.exp(model[l]['Z'])/np.sum(np.exp(model[l]['Z']), axis=0, keepdims=True)
-                #print(np.sum(model[l]['a']))
+def forward(X,layers,params):
+    for l in layers.keys():
+        if   layers[l]['activation']=='X':
+             layers[l]['a']=X
+        elif layers[l]['activation']=='relu':
+             layers[l]['Z']=np.dot(params[l]['W'],layers[l-1]['a'])+params[l]['b']
+             layers[l]['a']=layers[l]['Z']
+             layers[l]['a'][layers[l]['a']<0]=0
+        elif layers[l]['activation']=='softmax':
+             layers[l]['Z']=np.dot(params[l]['W'],layers[l-1]['a'])+params[l]['b']
+             layers[l]['a']=np.exp(layers[l]['Z'])/np.sum(np.exp(layers[l]['Z']), axis=0, keepdims=True)
         else:
             pass
-        return model
-def stack_forwards():
-    pass
+    return layers
+def append_flayers(flayers, blayers):
+    for l in flayers.keys():
+        for i  in ['z','a','dz','da']:
+            blayers[l][i].append(flayers[l][i])
+    return blayers
 def backward():
     pass
 
@@ -103,19 +106,22 @@ def backward():
 
 env = gym.make("Pong-v0")
 observation = env.reset()
-env.render()
-n_iterations=100
-obs=prepro(observation)
-X=get_x(obs,prev_obs=None)
-X.shape
-env.close()
+
 
 for i in range(n_iterations):
     # start new episode
     done=False
+    flayers=initialize_flayers()
+    blayers=initialize_blayers()
     while done==False: #(while episode last collect data)
-        #action=2
-        action=env.action_space.sample()
+        obs=prepro(observation)
+        X=get_x(obs,prev_obs=None)
+        flayers=forward(X,flayers,params)
+
+        action,action_index=get_action(flayers, exploration_eps)
+        #action=env.action_space.sample()
+        #flayers=get_last_grad(flayers,action_index)
+        blayers=append_flayers(flayers, blayers)
         observation, reward, done, info = env.step(action)
         env.render()
         time.sleep(0.01)
@@ -126,3 +132,4 @@ for i in range(n_iterations):
         break
 
 #-------------------------------------------------------------------------------
+blayers[]
