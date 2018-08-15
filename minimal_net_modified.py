@@ -34,8 +34,7 @@ learning_rate=1e-0
 update=1
 reg=1e-3
 
-model[2]['a'].shape
-Y.shape
+
 
 #Model--------------------------------------------------------------------------
 
@@ -115,6 +114,7 @@ def backward(model, Y, learning_rate, update, reg):# a:= partial_der; In all cas
 model=model0.copy()
 for i in range(0,10000):
     model=forward(model,X)
+    print(np.argmax(model[2]['a'][:,5], axis=0))
     model=backward(model,Y, learning_rate, update, reg)
     if i % 1000 == 0:
       #print(np.sum(np.abs(model[2]['dW'])))
